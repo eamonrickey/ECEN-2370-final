@@ -42,7 +42,11 @@ void Game_Over_Screen();
 void Game_loop();
 void Two_Player_Gameplay_loop();
 void One_Player_Gameplay_loop();
+
+//AI functions
 void RNG_drop_coin();
+void AI_Opponent();
+bool Simualte_Move(uint8_t board[ROWS][COLS], uint8_t player_drop);
 
 //Game Polling
 void Game_Touch_Polling(uint8_t pos, uint8_t player_touch);
