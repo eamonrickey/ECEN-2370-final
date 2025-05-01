@@ -1,3 +1,10 @@
+/*
+ * ApplicationCode.c
+ *
+ *  Created on: Dec 30, 2023 (updated 11/12/2024) Thanks Donavon! 
+ *      Author: Xavion
+ */
+
 #include "ApplicationCode.h"
 
 volatile uint8_t drop_requested = 0;
@@ -184,7 +191,6 @@ void Game_loop()
 
 }
 
-
 enum mode MM_Touch_Polling()
 {
 	while (1)
@@ -262,6 +268,7 @@ enum status Replay_Touch_Polling()
 	}
 }
 
+
 void RNG_drop_coin()
 {
 	uint32_t randomNum;
@@ -312,7 +319,7 @@ void Two_Player_Gameplay_loop()
 
 void One_Player_Gameplay_loop()
 {
-	uint8_t turn = PLAYER_ONE;
+	uint8_t turn = PLAYER_TWO;
 	bool game_on = true;
 	uint8_t start_position = 53;
 	printf("One Player Mode\n");
@@ -332,13 +339,175 @@ void One_Player_Gameplay_loop()
 		case PLAYER_TWO:
 			while(turn == PLAYER_TWO)
 			{
-				RNG_drop_coin();
+				//RNG_drop_coin();
+				AI_Opponent();
 				game_on = check_win(board, PLAYER_TWO);
 				turn = PLAYER_ONE;
 			}
 			break;
 		}
 	}
+}
+
+void AI_Opponent()
+{
+	//simulate player move
+	if(Simualte_Move(board, PLAYER_ONE))
+	{
+		return;
+	}
+	//simulate AI move
+	if(Simualte_Move(board, PLAYER_TWO))
+	{
+		return;
+	}
+	//if neither end in win then make random move
+	RNG_drop_coin();
+}
+
+bool Simualte_Move(uint8_t board[ROWS][COLS], uint8_t player)
+{
+	uint32_t options = 0;
+	uint8_t moves[COLS];
+	for (int i = 0; i < COLS; i++)
+	{
+		moves[i] = -1;
+	}
+
+	for (int row = ROWS - 1; row >= 0; row--)
+	{
+		for (int col = COLS - 1; col >= 0; col--)
+		{
+			if (board[row][col] != player)
+			{
+				continue;
+			}
+
+			// ---- Check Horizontal (right) ----
+			if (col >= 1 && board[row][col - 1] == player)
+			{
+				if(col >= 2 && board[row][col - 2] == 0 && board[row - 1][col - 2] != 0)
+				{
+					moves[options++] = col - 2;
+				}
+				if(col + 1 < COLS && board[row][col + 1] == 0 && board[row - 1][col + 1] != 0)
+				{
+					moves[options++] = col + 1;
+				}
+
+				if (col >= 2 && board[row][col - 2] == player)
+				{
+					if (((col >= 3 && row ==0 && board[row][col - 3] == 0) ||
+						(col >= 3 && row >= 1 && board[row - 1][col - 3] != 0 && board[row][col - 3] == 0)) &&
+							drop_coin(board, PLAYER_TWO, col - 3))
+					{
+						return true;
+					}
+					else if (((col + 1 < COLS && row ==0 && board[row][col + 1] == 0) ||
+							(col + 1 < COLS && row >= 1 && board[row - 1][col + 1] != 0 && board[row][col + 1] == 0)) &&
+							drop_coin(board, PLAYER_TWO, col + 1))
+					{
+						return true;
+					}
+				}
+
+			}
+			// ---- Check Vertical (down) ----
+			if (row >= 1 &&
+				board[row - 1][col] == player)
+			{
+				if(row + 1 < ROWS && board[row + 1][col] == 0)
+				{
+					moves[options++] = col;
+				}
+				if (row >= 2 && row + 1 < ROWS && board[row - 2][col] == player)
+				{
+					if (drop_coin(board, PLAYER_TWO, col))
+					{
+						return true;
+					}
+				}
+			}
+
+			// ---- Check Diagonal (down-left) ----
+			if (row >= 1 && col >= 1 &&
+				board[row - 1][col - 1] == player)
+			{
+				if ((col >= 2 && row >= 3 && board[row - 3][col - 2] != 0) || (col >= 2 && row == 2 && board[row - 2][col - 2] == 0))
+				{
+					moves[options++] = col - 2;
+				}
+				if (col + 1 < COLS && row < ROWS && board[row][col + 1] != 0 && board[row + 1][col + 1] == 0)
+				{
+					moves[options++] = col + 1;
+				}
+
+				if (row >= 2 && col >= 2 && board[row - 2][col - 2] == player)
+				{
+					if (((col >= 3 && row >= 4 && board[row - 4][col - 3] != 0) ||
+							(col >= 3 && row == 3 && board[row - 3][col - 3] == 0)) &&
+							drop_coin(board, PLAYER_TWO, col - 3))
+					{
+						return true;
+					}
+					else if ((col + 1 < COLS && row + 1 < ROWS && board[row][col + 1] != 0 &&
+							board[row + 1][col + 1] == 0) &&
+							drop_coin(board, PLAYER_TWO, col + 1))
+					{
+						return true;
+					}
+				}
+
+			}
+
+			// ---- Check Diagonal (down-right) ----
+			if (row >= 1 && col + 1 < COLS
+				&& board[row - 1][col + 1] == player)
+			{
+				if ((col + 2 < COLS && row >= 3 && board[row - 3][col + 2] != 0) || (col + 2 < COLS && row == 2 && board[row - 2][col + 2] == 0))
+				{
+					moves[options++] = col + 2;
+				}
+				if ((col >= 1 && row < ROWS && board[row][col - 1] != 0))
+				{
+					moves[options++] = col - 1;
+				}
+
+				if (row >= 2 && col + 2 < COLS && board[row - 2][col + 2] == player)
+				{
+					if (((col + 3 < COLS && row >= 4 && board[row - 4][col + 3] != 0) ||
+							(col + 3 < COLS && row == 3 && board[row - 3][col + 3] == 0)) &&
+							drop_coin(board, PLAYER_TWO, col + 3))
+					{
+						return true;
+					}
+					else if ((col >= 1 && row < ROWS && board[row][col - 1] != 0) &&
+							drop_coin(board, PLAYER_TWO, col - 1))
+					{
+						return true;
+					}
+				}
+			}
+		}
+	}
+
+	if (options > 0)
+	{
+		for (int i = 0; i < options; i++)
+		{
+			uint32_t randomNum;
+			RNG_Get_Number(&randomNum);
+			uint8_t col_choice = moves[randomNum % options];
+			if (drop_coin(board, PLAYER_TWO, col_choice))
+			{
+				return true;
+			}
+		}
+	}
+
+
+	// No win found
+	return false;
 }
 
 bool drop_coin(uint8_t board[ROWS][COLS], uint8_t player_drop, uint8_t col)
@@ -357,7 +526,6 @@ bool drop_coin(uint8_t board[ROWS][COLS], uint8_t player_drop, uint8_t col)
 
     return false;  // Column is full
 }
-
 
 bool check_win(uint8_t board[ROWS][COLS], uint8_t player)
 {
@@ -490,7 +658,3 @@ void EXTI0_IRQHandler()
 	 __HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_0);
 	IRQ_enableInterrupt(EXTI0_IRQn);
 }
-
-
-
-
