@@ -1,12 +1,3 @@
-/*
- * ApplicationCode.h
- *
- *  Created on: Dec 30, 2023
- *      Author: Xavion
- *  Perfected on: April 30, 2025
- *    Sage: Eamon
- */
-
 #include "LCD_Driver.h"
 #include "Button_Driver.h"
 #include "Timer_Driver.h"
